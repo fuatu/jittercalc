@@ -3,7 +3,8 @@ import platform
 import tkinter as tk
 from tkinter import ttk
 import threading
-import pkg_resources.py2_warn
+if platform.system() != 'Windows':
+    import pkg_resources.py2_warn
 from PIL import ImageTk, Image
 
 
