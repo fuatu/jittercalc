@@ -4,8 +4,9 @@ import tkinter as tk
 from tkinter import ttk
 import threading
 if platform.system() != 'Windows':
+    # needed for pyinstaller
     import pkg_resources.py2_warn
-from PIL import ImageTk, Image
+from PIL import ImageTk
 
 
 class MyApplication(tk.Tk):
@@ -15,26 +16,38 @@ class MyApplication(tk.Tk):
 
         super().__init__(*args, **kwargs)
         self.title("Jitter Calculator")
-        # self.iconbitmap('jittercalc.icns')
-        #img = ImageTk.PhotoImage(Image.open("jittercalc.icns"))
-        #self.iconphoto(True, img)
-        #self.call('wm', 'iconphoto', self._w, img)
-        #self.geometry("400x300")
         self.resizable(width=False, height=False)
         self.protocol("WM_DELETE_WINDOW", self.on_exit)
         self.fr = FirstFrame(self, bg="White")
         self.fr.grid(padx=5, pady=10, sticky=tk.E + tk.W + tk.N + tk.S)
         self.columnconfigure(0, weight=1)
+        # menu
+        menubar = tk.Menu(self)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Exit", command=self.on_exit)
+        menubar.add_cascade(label="File", menu=filemenu)
 
+        helpmenu = tk.Menu(menubar, tearoff=0)
+        helpmenu.add_command(label="About...", command=self.about)
+        menubar.add_cascade(label="Help", menu=helpmenu)
+        self.config(menu=menubar)
 
     def on_exit(self):
         from tkinter import messagebox
-        from time import sleep
         """When you click to exit, this function is called"""
         if str(self.fr.stop['state']) != tk.DISABLED:
-            messagebox.showinfo(title="Alert",message="First stop the running jobs!")
+            messagebox.showinfo(title="Alert", message="First stop the running jobs!")
             return
         self.destroy()
+
+    @staticmethod
+    def about():
+        from tkinter import messagebox
+        mymessage = "Developed by Fuat Ulugay\n\n" + \
+                    "Contributors:\n" + \
+                    "Jonathan Tissot"
+        messagebox.showinfo(title="About", message=mymessage)
+
 
 class FirstFrame(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
@@ -48,34 +61,35 @@ class FirstFrame(tk.Frame):
         self.white_black_btn = 'F1.TButton'
         self.white_black_input = 'F1.TEntry'
         self.white_black_spin = 'F1.TSpinbox'
+        ffont = "Lato 12"
+        fbold = " bold"
         style = ttk.Style(self)
         style.theme_use('classic')
         style.configure(self.white_black, background='white',
-                        font="Lato 12", padding="5", width="18",
+                        font=ffont, padding="5", width="18",
                         borderwidth="0", bordercolor="black", relief="groove")
         style.configure(self.black_white, background='black', foreground="white",
-                        font="Lato 12 bold", padding="5", width="40",
+                        font=ffont + fbold, padding="5", width="40",
                         borderwidth="2", bordercolor="white", relief="groove")
         style.configure(self.white_green, background='white', foreground="green",
-                        font="Lato 12", padding="5", width="8",
+                        font=ffont, padding="5", width="8",
                         borderwidth="2", bordercolor="black", relief="groove")
         style.configure(self.white_red, background='white', foreground="red",
-                        font="Lato 12", padding="5", width="8",
+                        font=ffont, padding="5", width="8",
                         borderwidth="2", bordercolor="black", relief="groove")
-        style.configure(self.white_black_btn, background='white',font="Lato 12 bold")
-        style.configure(self.white_black_input, foreground = "black", font="Lato 12 bold")
-        style.configure(self.white_black_spin, foreground="black", background="white",font="Lato 12 bold")
+        style.configure(self.white_black_btn, background='white', font=ffont + fbold)
+        style.configure(self.white_black_input, foreground="black", font=ffont + fbold)
+        style.configure(self.white_black_spin, foreground="black", background="white", font=ffont + fbold)
 
         self.input_ip = tk.StringVar()
         self.input_ip.set('192.168.1.1')
         self.external = tk.StringVar()
-        self.external.set('google.com')
+        self.external.set('hacktr.org')
         self.jitters = []
         self.jitters2 = []
         self.threads = []
         self.cont = True
         self.frame_details()
-
 
     def frame_details(self):
         # gateway
@@ -91,16 +105,17 @@ class FirstFrame(tk.Frame):
 
         self.buttonframe = tk.Frame(self)
         self.buttonframe.grid(padx=0, pady=5, row=2, column=1, sticky=tk.W)
-        self.calc = ttk.Button(self.buttonframe, text="Start", style=self.white_black_btn, command=self.calc_jitter_threads)
+        self.calc = ttk.Button(self.buttonframe, text="Start",
+                               style=self.white_black_btn, command=self.calc_jitter_threads)
         self.calc.grid(padx=5, row=0, column=1, sticky=tk.W)
-        self.stop = ttk.Button(self.buttonframe, text="Stop", style=self.white_black_btn, command=self.stop_calc, state='disabled')
+        self.stop = ttk.Button(self.buttonframe, text="Stop",
+                               style=self.white_black_btn, command=self.stop_calc, state='disabled')
         self.stop.grid(row=0, column=3, sticky=tk.W)
 
         self.canvas = tk.Canvas(self, width=800, height=500, bg='white')
         self.canvas.grid(row=3, column=0, columnspan=4, sticky=tk.W)
         # self.img = ImageTk.PhotoImage(Image.open('test.jpg'))
         self.jitter_plot()
-
 
     def jitter_plot(self):
         self.img = self.img = ImageTk.PhotoImage(self.get_image())
@@ -141,15 +156,16 @@ class FirstFrame(tk.Frame):
 
     def calc_jitter_threads(self):
         self.cont = True
-        self.thread1 = threading.Thread(target=self.calc_jitter, args=(), kwargs={'ip':self.input_ip.get(),'gateway':True})
+        self.thread1 = threading.Thread(target=self.calc_jitter, args=(),
+                                        kwargs={'ip': self.input_ip.get(), 'gateway': True})
         self.thread1.start()
         self.threads.append(self.thread1)
-        self.thread2 = threading.Thread(target=self.calc_jitter, args=(), kwargs={'ip': self.external.get(), 'gateway':False})
+        self.thread2 = threading.Thread(target=self.calc_jitter, args=(),
+                                        kwargs={'ip': self.external.get(), 'gateway': False})
         self.thread2.start()
         self.threads.append(self.thread2)
         self.calc['state'] = 'disabled'
         self.stop['state'] = 'normal'
-
 
     def calc_jitter(self, ip: str, gateway: bool):
         from decimal import Decimal
@@ -160,7 +176,7 @@ class FirstFrame(tk.Frame):
             for i in range(len(results[:-1])):
                 diff = abs(Decimal(results[i+1])-Decimal(results[i]))
                 total += diff
-            if results == []:
+            if not results:
                 jitter = -10
                 sleep(5)
             else:
@@ -176,10 +192,9 @@ class FirstFrame(tk.Frame):
         self.calc['state'] = 'normal'
         self.stop['state'] = 'disabled'
 
-
-    def ping_results(self,ip: str) -> []:
+    @staticmethod
+    def ping_results(ip: str) -> []:
         import re
-
 
         count = 5
         if platform.system() == 'Windows':
@@ -196,7 +211,7 @@ class FirstFrame(tk.Frame):
         lines = ping_result.split('\n')
 
         try:
-            times = [re.findall(regex_text,x)[0] for x in lines[start:count+1]]
+            times = [re.findall(regex_text, x)[0] for x in lines[start:count+1]]
         except:
             times = []
         return times
@@ -204,5 +219,3 @@ class FirstFrame(tk.Frame):
 
 myapp = MyApplication()
 myapp.mainloop()
-
-# TO-DO on exit stop all running threads
