@@ -7,6 +7,7 @@ for interconnectivity of DCs.
 I was looking for a solution but couldn't find one.
 So developed this one, free to use for everyone. 
 
+![jittercalc](https://hacktr.org/wp-content/uploads/2020/04/Jitter_Calculator-1024x812.png)
 ## Binaries
 The binaries are under bin folder.
 
