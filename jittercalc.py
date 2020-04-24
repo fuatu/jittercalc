@@ -52,6 +52,7 @@ class MyApplication(tk.Tk):
 class FirstFrame(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
+        from collections import deque
 
         # create the theme and styles
         self.black_white = 'F2.TLabel'
@@ -85,9 +86,8 @@ class FirstFrame(tk.Frame):
         self.input_ip.set('192.168.1.1')
         self.external = tk.StringVar()
         self.external.set('hacktr.org')
-        self.jitters = []
-        self.jitters2 = []
-        self.threads = []
+        self.jitters = deque(maxlen=50)
+        self.jitters2 = deque(maxlen=50)
         self.cont = True
         self.frame_details()
 
@@ -118,14 +118,9 @@ class FirstFrame(tk.Frame):
         self.jitter_plot()
 
     def jitter_plot(self):
-        self.img = self.img = ImageTk.PhotoImage(self.get_image())
+        self.img = ImageTk.PhotoImage(self.get_image())
         self.canvas.create_image((10, 10), anchor=tk.NW, image=self.img)
 
-    def cleanup_memory(self):
-        if len(self.jitters) >= 100:
-            self.jitters = self.jitters[-50:]
-        if len(self.jitters2) >= 100:
-            self.jitters2 = self.jitters2[-50:]
 
     def get_image(self):
         from matplotlib import pyplot as plt
@@ -134,11 +129,10 @@ class FirstFrame(tk.Frame):
         import matplotlib
         matplotlib.use('Agg')
 
-        self.cleanup_memory()
         # create a line chart, years on x-axis, gdp on y-axis
         plt.figure(figsize=(8.4, 4.8))
-        plt.plot(self.jitters[-50:], color='green', marker='o', linestyle='solid', label='gateway')
-        plt.plot(self.jitters2[-50:], color='red', marker='o', linestyle='solid', label='external')
+        plt.plot(self.jitters, color='green', marker='o', linestyle='solid', label='gateway')
+        plt.plot(self.jitters2, color='red', marker='o', linestyle='solid', label='external')
         # add a title
         plt.legend()
         plt.title("Jitter Graph")
@@ -159,15 +153,15 @@ class FirstFrame(tk.Frame):
         self.thread1 = threading.Thread(target=self.calc_jitter, args=(),
                                         kwargs={'ip': self.input_ip.get(), 'gateway': True})
         self.thread1.start()
-        self.threads.append(self.thread1)
         self.thread2 = threading.Thread(target=self.calc_jitter, args=(),
                                         kwargs={'ip': self.external.get(), 'gateway': False})
         self.thread2.start()
-        self.threads.append(self.thread2)
         self.calc['state'] = 'disabled'
         self.stop['state'] = 'normal'
 
     def calc_jitter(self, ip: str, gateway: bool):
+        if ip is None:
+            return
         from decimal import Decimal
         from time import sleep
         while self.cont:
@@ -186,11 +180,13 @@ class FirstFrame(tk.Frame):
                 self.jitters.append(jitter)
             else:
                 self.jitters2.append(jitter)
-                self.jitter_plot()
+            self.jitter_plot()
 
         print("Stopped...")
         self.calc['state'] = 'normal'
         self.stop['state'] = 'disabled'
+        ip = None
+        raise SystemExit()
 
     @staticmethod
     def ping_results(ip: str) -> []:
